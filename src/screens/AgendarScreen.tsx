@@ -1,39 +1,101 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+
+// 1. Definimos la estructura exacta que nos manda MySQL
+interface Empleada {
+  id_usuario: number;
+  nombre_completo: string;
+}
 
 export default function AgendarScreen() {
   const router = useRouter();
-  const { id, nombre } = useLocalSearchParams(); // Recibimos el servicio elegido
+  const { id, nombre } = useLocalSearchParams();
 
-  // Estados para guardar lo que la clienta va seleccionando
+  // Estados de selección del cliente
   const [empleadaSeleccionada, setEmpleadaSeleccionada] = useState<number | null>(null);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
   const [horaSeleccionada, setHoraSeleccionada] = useState<string | null>(null);
 
-  // Datos simulados (Luego los traeremos de tu base de datos)
-  const empleadas = [
-    { id: 1, nombre: 'Ana (Tú)' },
-    { id: 2, nombre: 'Sofía' },
-    { id: 3, nombre: 'Cualquiera' }
-  ];
+  // 2. Estados para guardar los datos reales de la base de datos
+  const [empleadas, setEmpleadas] = useState<Empleada[]>([]);
+  const [loadingEmpleadas, setLoadingEmpleadas] = useState(true);
+  const [guardando, setGuardando] = useState(false);
 
+  // Tu IP actual
+  const ip_computadora = "192.168.1.147"; // Casa | 192.168.1.147
+
+  // 3. Vamos por la lista de empleadas al servidor en cuanto abre la pantalla
+  useEffect(() => {
+    const fetchEmpleadas = async () => {
+      try {
+        const response = await axios.get(`http://${ip_computadora}:3000/api/empleadas`);
+        setEmpleadas(response.data);
+      } catch (error) {
+        console.error("Error al cargar empleadas:", error);
+      } finally {
+        setLoadingEmpleadas(false);
+      }
+    };
+    fetchEmpleadas();
+  }, []);
+
+  // Fechas y horas (Aún simuladas, las conectaremos más adelante)
   const diasDisponibles = ['Lun 15', 'Mar 16', 'Mié 17', 'Jue 18', 'Vie 19', 'Sáb 20'];
   const horasDisponibles = ['10:00', '11:00', '12:30', '14:00', '16:00', '17:30'];
 
-  const handleConfirmar = () => {
+const handleConfirmar = async () => {
     if (!empleadaSeleccionada || !diaSeleccionado || !horaSeleccionada) {
       Alert.alert('Atención', 'Por favor selecciona especialista, día y hora.');
       return;
     }
-    // Aquí irá la petición axios.post a tu backend en el futuro
-    Alert.alert('¡Cita Lista!', `Agendaste ${nombre} el ${diaSeleccionado} a las ${horaSeleccionada}.`);
+
+    setGuardando(true);
+
+    try {
+      // ⚠️ TRUCO TEMPORAL: Como nuestros botones dicen "Lun 15",
+      // extraeremos el número "15" y armaremos una fecha real para que MySQL la acepte.
+      const numeroDia = diaSeleccionado.split(' ')[1]; // Saca el "15"
+      const fechaParaMySQL = `2024-05-${numeroDia}`; // Quedaría "2024-05-15"
+
+      // A la hora le agregamos los segundos para que sea formato TIME
+      const horaParaMySQL = `${horaSeleccionada}:00`;
+
+      const response = await axios.post(`http://${ip_computadora}:3000/api/citas`, {
+        id_cliente: 1, // Suponiendo que el usuario con ID 1 existe en tu BD
+        id_empleada: empleadaSeleccionada,
+        id_servicio: Number(id),
+        fecha: fechaParaMySQL,
+        hora_inicio: horaParaMySQL
+      });
+
+      if (response.status === 201) {
+        // Le agregamos un botón a la alerta que contiene la redirección
+        Alert.alert(
+          '¡Cita Lista!', '\nTu cita se agendó exitosamente.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.push('/') // Hasta que den clic, regresamos al menú
+            }
+          ]
+        );
+      }
+    } catch (error: any) {
+      if (error.response && error.response.status === 409) {
+      Alert.alert('Horario Ocupado', '\nEsa especialista ya tiene una cita a esa hora. Por favor elige otra.');
+    } else {
+      Alert.alert('Error', 'No se pudo guardar la cita.');
+    }
+  } finally {
+    setGuardando(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#EC268F" />
@@ -44,23 +106,26 @@ export default function AgendarScreen() {
       <ScrollView style={styles.content}>
         <Text style={styles.serviceName}>{nombre}</Text>
 
-        {/* Sección: Empleadas */}
+        {/* Sección: Empleadas (AHORA CON DATOS REALES) */}
         <Text style={styles.sectionTitle}>1. Elige tu especialista</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-          {empleadas.map((emp) => (
-            <TouchableOpacity
-              key={emp.id}
-              style={[styles.chip, empleadaSeleccionada === emp.id && styles.chipActive]}
-              onPress={() => setEmpleadaSeleccionada(emp.id)}
-            >
-              <Text style={[styles.chipText, empleadaSeleccionada === emp.id && styles.chipTextActive]}>
-                {emp.nombre}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {loadingEmpleadas ? (
+            <ActivityIndicator size="small" color="#EC268F" />
+        ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+              {empleadas.map((emp) => (
+                <TouchableOpacity
+                  key={emp.id_usuario}
+                  style={[styles.chip, empleadaSeleccionada === emp.id_usuario && styles.chipActive]}
+                  onPress={() => setEmpleadaSeleccionada(emp.id_usuario)}
+                >
+                  <Text style={[styles.chipText, empleadaSeleccionada === emp.id_usuario && styles.chipTextActive]}>
+                    {emp.nombre_completo}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+        )}
 
-        {/* Sección: Fechas */}
         <Text style={styles.sectionTitle}>2. Elige el día</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
           {diasDisponibles.map((dia, index) => (
@@ -76,7 +141,6 @@ export default function AgendarScreen() {
           ))}
         </ScrollView>
 
-        {/* Sección: Horas (Grid) */}
         <Text style={styles.sectionTitle}>3. Elige la hora</Text>
         <View style={styles.gridContainer}>
           {horasDisponibles.map((hora, index) => (
@@ -93,10 +157,9 @@ export default function AgendarScreen() {
         </View>
       </ScrollView>
 
-      {/* Botón Flotante */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.bookButton} onPress={handleConfirmar}>
-          <Text style={styles.bookButtonText}>CONFIRMAR CITA</Text>
+        <TouchableOpacity style={[styles.bookButton, guardando && { backgroundColor: '#ccc' }]} onPress={handleConfirmar} disabled={guardando}>
+          <Text style={styles.bookButtonText}> {guardando ? 'GUARDANDO...' : 'CONFIRMAR CITA'}</Text>
         </TouchableOpacity>
       </View>
     </View>

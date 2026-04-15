@@ -34,7 +34,7 @@ const LoginScreen = () => {
       const passwordLimpia = password.trim();
 
       // 2. Usamos tu IP confirmada
-      const ip_computadora = "192.168.1.147";
+      const ip_computadora = "192.168.1.147"; // Casa | 192.168.1.147
 
       const response = await axios.post(`http://${ip_computadora}:3000/api/login`, {
         correo: correoLimpio,
@@ -47,9 +47,9 @@ const LoginScreen = () => {
 
         // Redirección inteligente según el rol
         if (usuarioLogueado.rol === 'cliente') {
-          router.replace('/catalogo');
+          router.replace('/catalogo' as any);
         } else {
-          router.replace('/agenda');
+          router.replace('/agenda' as any);
         }
       }
     } catch (error) {
@@ -107,7 +107,7 @@ const LoginScreen = () => {
           <Text style={styles.buttonText}>ENTRAR</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/registro')}>
+        <TouchableOpacity onPress={() => router.push('/registro' as any)}>
           <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
         </TouchableOpacity>
 

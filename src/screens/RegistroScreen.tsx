@@ -20,7 +20,7 @@ export default function RegistroScreen() {
     }
 
     try {
-      const ip_computadora = "192.168.1.147";
+      const ip_computadora = "192.168.1.147"; // Casa | 192.168.1.147
 
       const response = await axios.post(`http://${ip_computadora}:3000/api/clientes/registro`, {
         nombre_completo: nombre,

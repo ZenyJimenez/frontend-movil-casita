@@ -21,7 +21,7 @@ export default function CatalogoScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const ip_computadora = "192.168.1.147";
+  const ip_computadora = "192.168.1.147"; // Casa | 192.168.1.147
 
   useEffect(() => {
     const fetchServicios = async () => {
@@ -46,7 +46,7 @@ export default function CatalogoScreen() {
       onPress={() => {
         // Al tocar, navegamos a la pantalla de detalle pasándole los datos
         router.push({
-          pathname: '/servicio/[id]',
+          pathname: '/servicio/[id]' as any,
           params: {
             id: item.id_servicio,
             nombre: item.nombre,

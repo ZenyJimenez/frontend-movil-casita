@@ -52,7 +52,7 @@ export default function ServicioDetalleScreen() {
 
       {/* Botón Flotante Abajo */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.bookButton} onPress={() => router.push({ pathname: '/agendar/[id]', params: { id, nombre }})}>
+        <TouchableOpacity style={styles.bookButton} onPress={() => router.push({ pathname: '/agendar/[id]' as any, params: { id, nombre }})}>
           <Text style={styles.bookButtonText}>AGENDAR AHORA</Text>
         </TouchableOpacity>
       </View>
