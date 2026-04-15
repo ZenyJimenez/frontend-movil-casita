@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import axios from 'axios';
-import { COLORS } from '../src/styles/theme';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { COLORS } from '../src/styles/theme';
 
 interface Cita {
   id_cita: number;
@@ -21,7 +21,7 @@ export default function AgendaScreen() {
 
   const fetchCitas = async () => {
     try {
-      const response = await axios.get(`http://${ip_computadora}:3000/api/agenda/citas`);
+      const response = await axios.get(`http://${ip_computadora}:3000/api/citas/calendario`);
       setCitas(response.data);
     } catch (error) {
       console.error(error);
